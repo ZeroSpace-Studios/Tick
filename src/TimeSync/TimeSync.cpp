@@ -27,7 +27,7 @@
     POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include <TimeSync/TimeSync.h>
+#include "TimeSync.h"
 
 
 //------------------------------------------------------------------------------
