@@ -9,6 +9,27 @@
 #include <WS2tcpip.h>
 #endif // _WIN32
 
+#pragma pack(push, 1)
+typedef struct TimePacket {
+	uint8_t isPeerSync = false;
+	uint32_t peerID;
+	uint32_t time;
+} TimePacket;
+#pragma pack(pop)
+
+#pragma(push, 1)
+typedef struct TimeSyncPacket {
+	uint8_t isPeerSync = true;
+	uint32_t peerID;
+	uint32_t time;
+} TimeSyncPacket;
+#pragma(pop)
+
+typedef struct Time {
+	uint64_t time;
+	bool sync;
+};
+
 class Tick {
 public:
 	Tick();
@@ -26,9 +47,12 @@ public:
 
 
 protected:
-	uint64_t timeinFlight;
-	bool isConnected;
+	uint64_t incomingTime = 0;
+	bool isConnected = false;
 	TimeSynchronizer timeSync;
+	std::thread timeSyncThread;
+	std::atomic_bool timeSyncRunning = false;
+	std::mutex timeSyncMutex;
 };
 
 class TickReceiver : public Tick {
@@ -37,8 +61,9 @@ public:
 	TickReceiver();
 	~TickReceiver();
 
+	//Need to add bind IP
 	void setup() override;
-	void sendTime() override;
+	Time getTime();
 
 private:
 #ifdef _WIN32
@@ -46,5 +71,8 @@ private:
 	sockaddr_in addr;
 #endif // _WIN32
 
+	uint8_t peerID = 0;
 
+	void receiveTime() override;
+	void setTime(uint32_t time);
 };
