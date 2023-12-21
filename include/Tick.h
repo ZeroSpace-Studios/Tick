@@ -71,8 +71,21 @@ private:
 	sockaddr_in addr;
 #endif // _WIN32
 
-	uint8_t peerID = 0;
+	uint32_t peerID = 0;
 
 	void receiveTime() override;
 	void setTime(uint32_t time);
+};
+
+class TickSender : public Tick {
+public:
+	TickSender();
+	~TickSender();
+
+	void setup() override;
+	void sendTime() override;
+
+private:
+	uint32_t peerID = 0;
+
 };

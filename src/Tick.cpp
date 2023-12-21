@@ -1,5 +1,8 @@
 #include "Tick.h"
 
+
+// Receiver Class
+
 TickReceiver::TickReceiver() {
 	isConnected = false;
 	peerID = rand();
