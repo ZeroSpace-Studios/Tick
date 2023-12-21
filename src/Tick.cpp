@@ -26,7 +26,7 @@ void TickReceiver::setup()
 	addr.sin_family = AF_INET;
 	addr.sin_addr.s_addr = INADDR_ANY;
 	addr.sin_port = htons(10354);
-
+	//Need to setup socket timestamping
 	if (bind(sock, (struct sockaddr *)&addr, sizeof(addr)) == SOCKET_ERROR)
 	{
 		spdlog::error("Bind failed with error code : %d", WSAGetLastError());
@@ -86,7 +86,6 @@ void TickReceiver::receiveTime() {
 				setTime(p.time);
 			}
 		}
-
 		count++;
 	}
 }
