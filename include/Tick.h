@@ -7,6 +7,7 @@
 #pragma comment(lib,"Ws2_32.lib")
 #include <WinSock2.h>
 #include <WS2tcpip.h>
+#include <mstcpip.h>
 #endif // _WIN32
 
 #pragma pack(push, 1)
@@ -86,6 +87,10 @@ public:
 	void sendTime() override;
 
 private:
+#ifdef _WIN32
+	SOCKET sock;
+	sockaddr_in addr;
+#endif // _WIN32
 	uint32_t peerID = 0;
 
 };

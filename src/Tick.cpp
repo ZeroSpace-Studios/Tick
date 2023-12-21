@@ -20,16 +20,29 @@ void TickReceiver::setup()
 		spdlog::error("Unable to start windows sockets.");
 		return;
 	}
+
 #endif // _WIN32
 	if (sock = socket(AF_INET, SOCK_DGRAM, 0) == INVALID_SOCKET)
 	{
 		spdlog::error("Could not create socket : %d", WSAGetLastError());
 	};
 
+#ifdef _WIN32
+	DWORD numBytes;
+	TIMESTAMPING_CONFIG config = { 0 };
+	config.Flags |= TIMESTAMPING_FLAG_RX;
+	int error = WSAIoctl(sock, SIO_TIMESTAMPING, &config, sizeof(config), nullptr, 0, &numBytes, nullptr, nullptr);
+	if (error == SOCKET_ERROR) {
+		spdlog::error("Unable to enable timestamping on socket.");
+		return;
+	}
+#endif
+
+
 	addr.sin_family = AF_INET;
 	addr.sin_addr.s_addr = INADDR_ANY;
 	addr.sin_port = htons(10354);
-	//Need to setup socket timestamping
+
 	if (bind(sock, (struct sockaddr *)&addr, sizeof(addr)) == SOCKET_ERROR)
 	{
 		spdlog::error("Bind failed with error code : %d", WSAGetLastError());
@@ -99,4 +112,28 @@ void TickReceiver::setTime(uint32_t time) {
 	uint64_t stime = timeSync.FromLocalTime23(us.count(), time);
 	std::lock_guard<std::mutex> lock(timeSyncMutex);
 	incomingTime = stime;
+}
+
+
+void TickSender::setup(const std::string& ip, const int port) {
+#ifdef _WIN32
+	WSADATA wsaData;
+	if (WSAStartup(0x0101, &wsaData)) {
+		spdlog::error("Unable to start windows sockets.");
+		return;
+	}
+#endif // _WIN32
+
+	int client_socket;
+	if ((client_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == SOCKET_ERROR) // <<< UDP socket
+	{
+		printf("socket() failed with error code: %d", WSAGetLastError());
+		return 2;
+	}
+
+	// setup address structure
+	memset((char*)&addr, 0, sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons(port);
+	addr.sin_addr.S_un.S_addr = inet_addr(ip.c_str());
 }
