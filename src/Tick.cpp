@@ -73,7 +73,15 @@ void TickReceiver::receiveTime() {
 			buf.resize(1024);
 			sockaddr_in client;
 			int addr_len = sizeof(sockaddr_in);
-			recv_len = recvfrom(sock, &buf[0], 1024, 0, (sockaddr*)&client, &addr_len);
+
+#ifdef _WIN32
+			WSAMSG msg;
+			memset(&msg, 0, sizeof(msg));
+			msg.Control.buf = (char*)&buf[0];
+			msg.Control.len = 1024;
+#endif
+
+			recv_len = recvfrom(sock, &msg, 1024, 0, (sockaddr*)&client, &addr_len);
 			if (recv_len == SOCKET_ERROR) {
 				spdlog::error("recvfrom() failed with error code : %d", WSAGetLastError());
 				retry_count++;
@@ -83,8 +91,17 @@ void TickReceiver::receiveTime() {
 					return;
 				}
 			}
-
+#ifdef _WIN32
 			if (recv_len > 0) {
+				cmsghdr* cmsg;
+				uint64_t ts = 0;
+				for (cmsg = WSA_CMSG_FIRSTHDR(&msg); cmsg != nullptr; cmsg = WSA_CMSG_NXTHDR(&msg, cmsg)) {
+					if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SIO_TIMESTAMPING) {
+						memcpy(&ts, WSA_CMSG_DATA(cmsg), sizeof(ts));
+						break;
+					}
+				};
+#endif
 				retry_count = 0;
 				uint8_t isSync = 0;
 				std::memcpy(&isSync, &buf[0], sizeof(uint8_t));
@@ -128,7 +145,7 @@ void TickSender::setup(const std::string& ip, const int port) {
 	if ((client_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == SOCKET_ERROR) // <<< UDP socket
 	{
 		printf("socket() failed with error code: %d", WSAGetLastError());
-		return 2;
+		return wind;
 	}
 
 	// setup address structure

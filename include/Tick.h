@@ -8,6 +8,7 @@
 #include <WinSock2.h>
 #include <WS2tcpip.h>
 #include <mstcpip.h>
+#include <Windows.h>
 #endif // _WIN32
 
 #pragma pack(push, 1)
@@ -42,7 +43,7 @@ public:
 	// We need to be able to bind to multicast addresses
 	// Needs to be microsend accurate
 
-	virtual void setup() = 0;
+	virtual void setup(const std::string& ip, const int port) = 0;
 	virtual void sendTime() = 0;
 	virtual void receiveTime() = 0;
 
@@ -83,7 +84,7 @@ public:
 	TickSender();
 	~TickSender();
 
-	void setup() override;
+	void setup(const std::string& ip, const int port) override;
 	void sendTime() override;
 
 private:
